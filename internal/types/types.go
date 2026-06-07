@@ -757,6 +757,7 @@ type IssueDetails struct {
 	Dependencies []*IssueWithDependencyMetadata `json:"dependencies,omitempty"`
 	Dependents   []*IssueWithDependencyMetadata `json:"dependents,omitempty"`
 	Comments     []*Comment                     `json:"comments,omitempty"`
+	Attachments  []*Attachment                  `json:"attachments,omitempty"`
 	Parent       *string                        `json:"parent,omitempty"`
 
 	// Cardinality fields — emitted by default (count-only mode).
@@ -765,6 +766,7 @@ type IssueDetails struct {
 	DependentCount  *int64 `json:"dependent_count,omitempty"`
 	DependencyCount *int64 `json:"dependency_count,omitempty"`
 	CommentCount    *int64 `json:"comment_count,omitempty"`
+	AttachmentCount *int64 `json:"attachment_count,omitempty"`
 
 	// Epic progress fields (populated only for issue_type=epic with children)
 	EpicTotalChildren  *int  `json:"epic_total_children,omitempty"`
