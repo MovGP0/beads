@@ -1082,7 +1082,7 @@ func (e *Engine) doPush(ctx context.Context, opts SyncOptions, skipIDs, forceIDs
 		}
 	}
 
-	if batchTracker, ok := e.Tracker.(BatchPushTracker); ok {
+	if batchTracker, ok := e.Tracker.(BatchPushTracker); ok && !opts.PushAttachments {
 		pushIssues, skipped := e.collectBatchPushIssues(issues, opts, descendantSet, skipIDs, forceIDs)
 		stats.Skipped += skipped
 		if len(pushIssues) == 0 {

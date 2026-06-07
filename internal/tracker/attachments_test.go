@@ -127,3 +127,26 @@ func TestAttachmentPushSkipsExistingRemoteFilenameSize(t *testing.T) {
 		t.Fatalf("stats = %+v uploadCalls=%d", stats, tracker.uploadCalls)
 	}
 }
+
+func TestPushAttachmentsBypassesBatchPushPath(t *testing.T) {
+	tracker := &mockBatchTracker{mockTracker: newMockTracker("mock")}
+	store := newPureTestStore(&types.Issue{
+		ID:        "bd-1",
+		Title:     "Issue",
+		Status:    types.StatusOpen,
+		IssueType: types.TypeTask,
+		Priority:  2,
+	})
+	engine := NewEngine(tracker, store, "tester")
+
+	result, err := engine.Sync(context.Background(), SyncOptions{Push: true, PushAttachments: true})
+	if err != nil {
+		t.Fatalf("Sync() error = %v", err)
+	}
+	if tracker.batchCalls != 0 {
+		t.Fatalf("BatchPush called %d times with PushAttachments enabled", tracker.batchCalls)
+	}
+	if result.PushStats.Created != 1 {
+		t.Fatalf("PushStats = %+v, want one per-issue create", result.PushStats)
+	}
+}
