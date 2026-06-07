@@ -5,6 +5,7 @@
 package attachments
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -105,6 +106,29 @@ func Store(st any, issueID, sourcePath string) (*StoredFile, error) {
 	}
 	if !info.Mode().IsRegular() {
 		return nil, fmt.Errorf("attachment source is not a regular file")
+	}
+
+	return StoreReader(st, issueID, filename, source)
+}
+
+// StoreBytes stores downloaded attachment bytes in the same content-addressed
+// local byte store used by `bd attachment add`.
+func StoreBytes(st any, issueID, filename string, data []byte) (*StoredFile, error) {
+	return StoreReader(st, issueID, filename, bytes.NewReader(data))
+}
+
+// StoreReader streams attachment bytes into .beads/attachments/<issueID>/<sha256>.
+// It exists for tracker integrations that download bytes from an API instead of
+// a local source path, while preserving the same hashing, MIME detection, and
+// atomic write behavior as Store.
+func StoreReader(st any, issueID, filename string, source io.Reader) (*StoredFile, error) {
+	issueID = strings.TrimSpace(issueID)
+	if issueID == "" {
+		return nil, fmt.Errorf("issue ID is empty")
+	}
+	filename, err := SafeFilename(filename)
+	if err != nil {
+		return nil, err
 	}
 
 	root, err := Root(st)
