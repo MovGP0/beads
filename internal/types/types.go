@@ -951,6 +951,24 @@ type Comment struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Attachment describes a file associated with an issue.
+//
+// The bytes are stored outside this metadata row. StorageRelPath records the
+// path relative to the bead store root so filesystem code can locate the
+// object without coupling SQL storage to the byte-store implementation.
+type Attachment struct {
+	ID               string    `json:"id"`
+	IssueID          string    `json:"issue_id"`
+	HashAlgorithm    string    `json:"hash_algorithm"`
+	ContentHash      string    `json:"content_hash"`
+	OriginalFilename string    `json:"original_filename"`
+	MimeType         string    `json:"mime_type"`
+	ByteSize         int64     `json:"byte_size"`
+	StorageRelPath   string    `json:"storage_relpath"`
+	CreatedBy        string    `json:"created_by"`
+	CreatedAt        time.Time `json:"created_at"`
+}
+
 // UnmarshalJSON handles backward compatibility for Comment.
 // Pre-v1.0 exported Comment.ID as int64; current schema uses string.
 func (c *Comment) UnmarshalJSON(data []byte) error {
