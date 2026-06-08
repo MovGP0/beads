@@ -19,6 +19,8 @@ BUILD_DIR := .
 GIT_BUILD := $(shell git rev-parse --short HEAD)
 ifeq ($(OS),Windows_NT)
 INSTALL_DIR := $(USERPROFILE)/.local/bin
+WINDOWS_MINGW_BIN ?= /c/ProgramData/mingw64/mingw64/bin
+WINDOWS_MINGW_GCC := $(WINDOWS_MINGW_BIN)/gcc.exe
 else
 INSTALL_DIR := $(HOME)/.local/bin
 endif
@@ -29,7 +31,8 @@ endif
 # Windows notes:
 #   - ICU is NOT required. go-icu-regex has a pure-Go fallback (regex_windows.go)
 #     and gms_pure_go tag tells go-mysql-server to use pure-Go regex too.
-#   - CGO_ENABLED=1 needs a C compiler (MinGW/MSYS2) but does NOT need ICU.
+#   - CGO_ENABLED=1 needs MinGW-w64/MSYS2 gcc but does NOT need ICU.
+#     MSVC link.exe is not a supported alternative for Go's Windows cgo path.
 export CGO_ENABLED := 1
 
 # When go.mod requires a newer Go version than the locally installed one,
@@ -53,7 +56,17 @@ REGRESSION_TIMEOUT ?= 20m
 build:
 	@echo "Building bd..."
 ifeq ($(OS),Windows_NT)
-	go build -tags "$(BUILD_TAGS)" -ldflags="-X main.Build=$(GIT_BUILD)" -o $(BUILD_DIR)/bd.exe ./cmd/bd
+	@if command -v gcc >/dev/null 2>&1; then \
+		CC=$${CC:-gcc} go build -tags "$(BUILD_TAGS)" -ldflags="-X main.Build=$(GIT_BUILD)" -o $(BUILD_DIR)/bd.exe ./cmd/bd; \
+	elif [ -x "$(WINDOWS_MINGW_GCC)" ]; then \
+		echo "Using MinGW-w64 from $(WINDOWS_MINGW_BIN)"; \
+		PATH="$(WINDOWS_MINGW_BIN):$$PATH" CC=gcc go build -tags "$(BUILD_TAGS)" -ldflags="-X main.Build=$(GIT_BUILD)" -o $(BUILD_DIR)/bd.exe ./cmd/bd; \
+	else \
+		echo "ERROR: Windows CGO builds require MinGW-w64 gcc." >&2; \
+		echo "       Visual Studio clang/MSVC link.exe is not supported by Go cgo for this build." >&2; \
+		echo "       Install MinGW-w64 and ensure gcc.exe is on PATH, or set WINDOWS_MINGW_BIN=/path/to/mingw/bin." >&2; \
+		exit 1; \
+	fi
 else
 	go build -tags "$(BUILD_TAGS)" -ldflags="-X main.Build=$(GIT_BUILD)" -o $(BUILD_DIR)/bd ./cmd/bd
 ifeq ($(shell uname),Darwin)

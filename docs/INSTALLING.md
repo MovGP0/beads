@@ -214,6 +214,9 @@ $env:CGO_ENABLED="1"; $env:GOFLAGS="-tags=gms_pure_go"; go install github.com/st
 ```
 
 Requires MinGW-w64 gcc on your PATH. ICU is **not** required — `gms_pure_go` selects Go's stdlib `regexp`.
+Visual Studio clang/MSVC `link.exe` is not a supported substitute for this
+Windows CGO build; Go's Windows CGO path expects a MinGW-w64 style GCC
+toolchain.
 
 **From source**:
 ```pwsh
