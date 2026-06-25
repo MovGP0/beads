@@ -6,6 +6,38 @@ import (
 	"testing"
 )
 
+// TestRenderMarkdownStylesBodyContentRegression3881 is the focused guard for
+// gastownhall/beads#3881: when color is supported, body markdown (headings,
+// bold, inline code) must be rendered with ANSI styling, not passed through as
+// plaintext. The glamour v1->v2 migration silently broke this by dropping the
+// style option, leaving an empty StyleConfig that emitted unstyled text. This
+// asserts both that ANSI SGR is present and that markdown syntax markers are
+// consumed, so it cannot be satisfied by raw passthrough.
+func TestRenderMarkdownStylesBodyContentRegression3881(t *testing.T) {
+	withMarkdownEnv(t, map[string]string{
+		"NO_COLOR":        "",
+		"TERM":            "xterm-256color",
+		"CLICOLOR_FORCE":  "1",
+		"FORCE_HYPERLINK": "",
+		"BD_AGENT_MODE":   "",
+		"CLAUDE_CODE":     "",
+	})
+
+	out := RenderMarkdown("# Heading\n\nSome **bold** text and `code`.\n")
+
+	if !strings.Contains(out, "\x1b[") {
+		t.Fatalf("expected ANSI SGR styling for rendered body, got %q", out)
+	}
+	if !strings.Contains(out, "Heading") {
+		t.Fatalf("expected heading text in output, got %q", out)
+	}
+	for _, marker := range []string{"# ", "**", "`"} {
+		if strings.Contains(out, marker) {
+			t.Fatalf("expected markdown marker %q to be rendered away, got %q", marker, out)
+		}
+	}
+}
+
 func TestRenderMarkdownStripsEscapesWhenANSIUnsupported(t *testing.T) {
 	withMarkdownEnv(t, map[string]string{
 		"NO_COLOR":        "1",
